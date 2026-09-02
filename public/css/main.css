@@ -1,30 +1,294 @@
-html, body {
-    background-color: lightblue;
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
+/* ==========================================================================
+   CSE 340 Service Network - Main Stylesheet
+   Organized: tokens -> reset -> base -> layout -> components -> responsive
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. DESIGN TOKENS
+   Custom properties (CSS variables) defined once on :root, reused below.
+   Change a color here and it updates everywhere it is used.
+   -------------------------------------------------------------------------- */
+:root {
+    /* Brand colors - all tested for WCAG AA contrast (4.5:1 minimum) */
+    --color-brand-dark:  #0b2a4a;  /* nav bar / footer background */
+    --color-brand:       #10416f;  /* headings */
+    --color-brand-light: #1560a0;  /* links (5.6:1 on white) */
+    --color-accent:      #c2410c;  /* accent bar on cards */
+
+    /* Neutrals */
+    --color-text:    #1f2937;      /* body text (15:1 on white) */
+    --color-muted:   #4b5563;      /* secondary text (8:1 on white) */
+    --color-surface: #ffffff;      /* cards */
+    --color-page:    #f5f7fa;      /* page background */
+    --color-border:  #dde3ea;
+
+    /* Typography - system fonts load instantly, no external requests */
+    --font-body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    /* Spacing scale - consistent rhythm instead of arbitrary numbers */
+    --space-xs: 0.5rem;
+    --space-sm: 0.75rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2.5rem;
+
+    /* Reusable values */
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(11, 42, 74, 0.08), 0 4px 12px rgba(11, 42, 74, 0.05);
+    --max-width: 900px;
 }
 
+/* --------------------------------------------------------------------------
+   2. RESET
+   -------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;   /* padding and border count inside the width */
+}
+
+body,
+h1, h2, h3, p, ul, figure {
+    margin: 0;                /* clear inconsistent browser defaults */
+}
+
+img {
+    max-width: 100%;          /* images never overflow their container */
+    height: auto;             /* preserves aspect ratio when width shrinks */
+    display: block;
+}
+
+/* --------------------------------------------------------------------------
+   3. BASE
+   -------------------------------------------------------------------------- */
 body {
-    nav {
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.65;        /* generous leading is easier to read */
+    color: var(--color-text);
+    background-color: var(--color-page);
 
-        li {
-            display: inline;
-            margin-right: 15px;
-        }
+    /* Sticky footer: body fills the viewport, main grows to push footer down */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
 
-        a {
-            text-decoration: none;
-            color: #333;
-            font-weight: bold;
+/* --------------------------------------------------------------------------
+   4. TYPOGRAPHY
+   clamp(min, preferred, max) scales font size fluidly with viewport width,
+   so headings shrink on phones without needing a media query.
+   -------------------------------------------------------------------------- */
+h1 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    line-height: 1.2;
+    color: var(--color-brand);
+    letter-spacing: -0.02em;
+    margin-bottom: var(--space-xs);
+}
 
-            &:hover {
-                color: #0066cc;
-            }
-        }
+h2 {
+    font-size: clamp(1.25rem, 2.5vw, 1.6rem);
+    line-height: 1.3;
+    color: var(--color-brand);
+    font-weight: 600;
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-sm);
+}
+
+p {
+    margin-bottom: var(--space-md);
+    max-width: 65ch;          /* ~65 characters per line reads best */
+}
+
+a {
+    color: var(--color-brand-light);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+}
+
+a:hover {
+    color: var(--color-brand-dark);
+}
+
+/* --------------------------------------------------------------------------
+   5. NAVIGATION
+   The bar spans the full width; the inner list is capped and centered so it
+   lines up with the main content.
+   -------------------------------------------------------------------------- */
+nav {
+    background-color: var(--color-brand-dark);
+    padding: var(--space-sm) var(--space-md);
+}
+
+nav ul {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+
+    display: flex;
+    flex-wrap: wrap;          /* links wrap to a second row on narrow screens */
+    gap: var(--space-xs);
+}
+
+nav a {
+    display: block;           /* makes the whole padded box clickable */
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius);
+
+    color: #ffffff;           /* 14:1 contrast on the dark bar */
+    font-weight: 600;
+    text-decoration: none;
+
+    transition: background-color 0.2s ease;
+}
+
+nav a:hover,
+nav a:focus-visible {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   6. MAIN CONTENT
+   -------------------------------------------------------------------------- */
+main {
+    flex: 1;                  /* grows to fill space, pinning footer to bottom */
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--space-xl) var(--space-md);
+}
+
+/* --------------------------------------------------------------------------
+   7. CONTENT LISTS (cards)
+   Scoped to <ul> inside <main> only, so the nav list is unaffected.
+   -------------------------------------------------------------------------- */
+main ul {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--space-lg);
+
+    display: grid;            /* grid gives even gaps without margin collapsing */
+    gap: var(--space-md);
+}
+
+main li {
+    background-color: var(--color-surface);
+    padding: var(--space-md) var(--space-lg);
+
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-accent);   /* accent stripe */
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+main li:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(11, 42, 74, 0.12), 0 8px 20px rgba(11, 42, 74, 0.08);
+}
+
+main li strong {
+    color: var(--color-brand);
+}
+
+/* Logos inside list items float left so the text wraps beside them.
+   The float is contained by the card because of the flow-root below. */
+main li {
+    display: flow-root;       /* modern clearfix - card wraps its floats */
+}
+
+main li img {
+    float: left;
+    width: 48px;
+    height: 48px;
+    object-fit: contain;      /* fits the box without distorting the logo */
+    margin: 0 var(--space-md) var(--space-xs) 0;
+}
+
+/* --------------------------------------------------------------------------
+   8. IMAGES
+   -------------------------------------------------------------------------- */
+.main-logo {
+    display: block;
+    margin: var(--space-xl) auto 0;
+    max-width: 420px;
+    border-radius: var(--radius);
+}
+
+/* --------------------------------------------------------------------------
+   9. FOOTER
+   -------------------------------------------------------------------------- */
+footer {
+    background-color: var(--color-brand-dark);
+    color: #e2e8f0;           /* 12:1 contrast on the dark background */
+    text-align: center;
+    padding: var(--space-lg) var(--space-md);
+    margin-top: var(--space-xl);
+}
+
+footer p {
+    max-width: none;          /* override the 65ch cap so it centers properly */
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* --------------------------------------------------------------------------
+   10. ACCESSIBILITY
+   -------------------------------------------------------------------------- */
+
+/* Visible keyboard focus ring. :focus-visible shows it for keyboard users
+   but not on mouse clicks, so it helps without looking noisy. */
+a:focus-visible,
+button:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* Respect the OS reduce-motion setting for users with motion sensitivity */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
-}   
+}
+
+/* --------------------------------------------------------------------------
+   11. RESPONSIVE
+   Everything above is already mobile-friendly (flex-wrap, clamp, grid).
+   These breakpoints refine the small and large ends.
+   -------------------------------------------------------------------------- */
+
+/* Phones - tighten spacing and stack the nav links */
+@media (max-width: 600px) {
+    main {
+        padding: var(--space-lg) var(--space-md);
+    }
+
+    nav ul {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    main li {
+        padding: var(--space-md);
+    }
+
+    main li img {
+        float: none;                     /* logo stacks above the text */
+        margin: 0 0 var(--space-sm) 0;
+    }
+}
+
+/* Wide screens - show cards two-up */
+@media (min-width: 900px) {
+    main ul {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
