@@ -51,7 +51,7 @@ app.get('/categories', async (req, res) => {
     res.render('categories', { title });
 });
 
-app.listen(PORT, () => {
+app.listen(host_Port, () => {
     console.log(`Server is running at http://127.0.0.1:${host_Port}`);
     console.log(`Environment: ${node_Env}`);
 });
