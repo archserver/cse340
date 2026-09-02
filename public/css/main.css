@@ -83,8 +83,13 @@ h1 {
     font-size: clamp(1.75rem, 4vw, 2.5rem);
     line-height: 1.2;
     color: var(--color-brand);
-    letter-spacing: -0.02em;
     margin-bottom: var(--space-xs);
+
+    /* Uppercase is applied visually, not typed into the HTML. Screen readers
+       read the underlying "Categories" instead of spelling out an all-caps
+       word letter by letter. Caps need looser tracking to stay readable. */
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
 }
 
 h2 {
