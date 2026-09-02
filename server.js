@@ -5,8 +5,8 @@ import path from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const node_Env = process.env.node_Env?.toLowerCase() || 'production';
-const host_Port = process.env.host_Port || 3000;
+const node_Env = process.env.NODE_ENV?.toLowerCase() || 'production';
+const host_Port = process.env.PORT || 3000;
 
 const app = express();
 
