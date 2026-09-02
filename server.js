@@ -5,8 +5,8 @@ import path from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const node_Env = process.env.NODE_ENV?.toLowerCase() || 'production';
-const host_Port = process.env.PORT || 3000;
+const nodeEnv = process.env.NODE_ENV?.toLowerCase() || 'production';
+const hostPort = process.env.PORT || 3000;
 
 const app = express();
 
@@ -51,7 +51,7 @@ app.get('/categories', async (req, res) => {
     res.render('categories', { title });
 });
 
-app.listen(host_Port, () => {
-    console.log(`Server is running at http://127.0.0.1:${host_Port}`);
-    console.log(`Environment: ${node_Env}`);
+app.listen(hostPort, () => {
+    console.log(`Server is running at http://127.0.0.1:${hostPort}`);
+    console.log(`Environment: ${nodeEnv}`);
 });
