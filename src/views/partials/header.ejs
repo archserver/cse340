@@ -1,8 +1,13 @@
+<%# Shared page opening: doctype through the site navigation.                    %>
+<%# Included by every page, so nav links are edited in exactly one place.        %>
+<%# Not a complete document on its own - it is valid only combined with a page   %>
+<%# body and footer.ejs.                                                         %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%# Every route supplies its own `title`, giving each page a distinct tab label. %>
     <title><%= title %></title>
     <link rel="stylesheet" href="/css/main.css">
 </head>

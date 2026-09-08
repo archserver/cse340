@@ -1,12 +1,13 @@
+<%# Project categories page. Receives `title` and `categories` from the      %>
+<%# /categories route, which loads them via getAllCategories().              %>
 <%- include('partials/header') %>
     <main>
         <h1>Categories</h1>
         <h2>Service Project Categories</h2>
         <ul>
-            <li>Environmental - Cleanups, conservation, and sustainability projects.</li>
-            <li>Educational - Tutoring, literacy programs, and school support.</li>
-            <li>Community Service - Neighborhood improvement and local outreach.</li>
-            <li>Health and Wellness - Health fairs, food drives, and wellness education.</li>
+            <% categories.forEach(category => { %>
+                <li><strong><%= category.name %></strong> - <%= category.description %></li>
+            <% }); %>
         </ul>
     </main>
 <%- include('partials/footer') %>

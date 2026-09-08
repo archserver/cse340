@@ -1,9 +1,13 @@
+<%# Partner organizations page. Receives `title` and `organizations` from the %>
+<%# /organizations route, which loads them via getAllOrganizations().         %>
 <%- include('partials/header') %>
     <main>
         <h1>Organizations</h1>
         <p>Here are a few of our partner organizations:</p>
         <ul>
             <% organizations.forEach(organization => { %>
+                <%# logo_filename stores only the file name, so the /images/ path %>
+                <%# prefix is supplied here and the files live in public/images/. %>
                 <li><img src="/images/<%= organization.logo_filename %>" alt="<%= organization.name %> logo"><strong><%= organization.name %></strong>:
                 <%= organization.contact_email %></li>
             <% }); %>

@@ -13,21 +13,22 @@ import { Pool } from 'pg';
  */
 const pool = new Pool({
     connectionString: process.env.DB_URL,
- //   ssl: true
+    /**
+     * Render's PostgreSQL instances present a self-signed certificate, which
+     * `ssl: true` rejects because it requires a certificate signed by a trusted
+     * authority. rejectUnauthorized: false keeps the connection encrypted but
+     * skips verification of the certificate chain, which is what Render managed
+     * Postgres requires. Acceptable for coursework; a production system handling
+     * real data should verify the certificate instead.
+     */
     ssl: { rejectUnauthorized: false }
 });
 
 /**
- * Common SSL Issue:
- *
- * You may encounter SSL connection errors depending on your operating system, Node.js
- * version, or PostgreSQL server settings. If you have confirmed your credentials are
- * correct but still see SSL errors, try updating the 'ssl' property in the Pool
- * configuration above to:
- *
- * ssl: {
- *     rejectUnauthorized: false
- * }
+ * Note: the SSL setting above already reflects the fix for the common
+ * self-signed-certificate error seen when connecting to hosted PostgreSQL.
+ * A stricter `ssl: true` works only when the server presents a certificate
+ * signed by an authority Node already trusts.
  */
 
 /**

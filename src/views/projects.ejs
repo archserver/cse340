@@ -1,15 +1,22 @@
+<%# Service projects page. Receives `title` and `projects` from the /projects route. %>
+<%# Each project row already carries organization_name, resolved by the JOIN in      %>
+<%# src/models/projects.js, so no second query is needed here.                       %>
 <%- include('partials/header') %>
     <main>
         <h1>Projects</h1>
         <h2>Upcoming Service Projects</h2>
         <ul>
-             <% projects.forEach(project => { %>
-                  <li>
-                      <%= project.event_date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>:
-                      <strong><%= project.title %></strong>
-                      (<%= project.organization_name %>)
-                  </li>
-              <% }); %>
+            <%# Loop over every project row returned by getAllProjects(). The scriptlet %>
+            <%# tags below open and close an ordinary JavaScript forEach callback.      %>
+            <% projects.forEach(project => { %>
+                <li>
+                    <%# event_date arrives from pg as a JavaScript Date object, so it %>
+                    <%# must be formatted or it prints as a full timestamp.           %>
+                    <%= project.event_date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>:
+                    <strong><%= project.title %></strong>
+                    (<%= project.organization_name %>)
+                </li>
+            <% }); %>
         </ul>
     </main>
 <%- include('partials/footer') %>
