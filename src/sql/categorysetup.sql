@@ -3,10 +3,9 @@
 -- project_category junction table.
 --
 -- A service project can fall under several categories, and a category applies to
--- many projects. That is a many-to-many relationship, which a plain column on
--- projects cannot express: one column holds one value, and a comma-separated
+-- many projects. That is a many-to-many relationship. A comma-separated
 -- list would break first normal form and make filtering by category painful.
--- The standard solution is a third table holding one row per pairing.
+-- The solution is a third table one row per pairing.
 --
 -- Run AFTER orgsetup.sql and projectsetup.sql: project_category declares a
 -- foreign key against projects, and its seed rows reference project ids that
@@ -32,7 +31,7 @@ CREATE TABLE category (
 -- ---------------------------------------------------------------------------
 -- The junction table.
 --
--- It carries no data of its own - only the pair of foreign keys that records
+-- It carries only the pair of foreign keys that records
 -- "this project belongs to this category". 
 -- Bridgeing Table.
 -- ---------------------------------------------------------------------------
@@ -47,13 +46,12 @@ CREATE TABLE project_category (
 
     -- A composite primary key over both columns, rather than a SERIAL surrogate
     -- key. It is the pairing that must be unique: this makes it impossible to
-    -- file the same project under the same category twice, which a surrogate id
-    -- would happily allow.
+    -- file the same project under the same category twice.
     PRIMARY KEY (project_id, category_id)
 );
 
 -- The first four match the categories already listed on the /categories page;
--- the last three are new. Assigned ids 1 through 7 in order.
+-- the last three are new. Assigned ids 1 through 7 by load order.
 INSERT INTO category (name, description)
 VALUES
 ('Environmental',                                                       -- 1
