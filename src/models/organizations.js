@@ -30,5 +30,26 @@ const getAllOrganizations = async() => {
     // (row counts, field metadata) is not needed by the views.
     return result.rows;
 }
+// get the detail of an organization
+const getOrganizationDetails = async (organizationId) => {
+      const query = `
+      SELECT
+        organization_id,
+        name,
+        description,
+        contact_email,
+        logo_filename
+      FROM organization
+      WHERE organization_id = $1;
+    `;
 
-export {getAllOrganizations}
+      const queryParams = [organizationId];
+      const result = await db.query(query, queryParams);
+
+      // Return the first row of the result set, or null if no rows are found
+      return result.rows.length > 0 ? result.rows[0] : null;
+};
+
+
+// export model functions
+export {getAllOrganizations, getOrganizationDetails}

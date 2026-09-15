@@ -8,7 +8,7 @@
             <% organizations.forEach(organization => { %>
                 <%# logo_filename stores only the file name, so the /images/ path %>
                 <%# prefix is supplied here and the files live in public/images/. %>
-                <li><img src="/images/<%= organization.logo_filename %>" alt="<%= organization.name %> logo"><strong><%= organization.name %></strong>:
+                <li><img src="/images/<%= organization.logo_filename %>" alt="<%= organization.name %> logo"><a href="/organization/<%= organization.organization_id %>"><%= organization.name %></a>:
                 <%= organization.contact_email %></li>
             <% }); %>
         </ul>

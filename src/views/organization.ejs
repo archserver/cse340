@@ -1,0 +1,16 @@
+<%# Partner organizations page. Receives `title` and `organizations` from the %>
+<%# /organizations route, which loads them via getAllOrganizations().         %>
+<%- include('partials/header') %>
+    <main>
+        <h1>Organization</h1>
+        <h2> <%= organizationDetails.name %></h2>
+        <img src="/images/<%= organizationDetails.logo_filename %>" alt="<%= organizationDetails.name %> logo">
+        <p> <%= organizationDetails.description %></p>
+        <h3>Associated Service Projects:</h3>
+        <ul>
+            <% projects.forEach(project => { %>
+                <li><a href="/project/<%= project.project_id %>"><%= project.title %></a></li>
+            <% }) %>
+        </ul>
+    </main>
+<%- include('partials/footer') %>
