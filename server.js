@@ -9,9 +9,7 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { testConnection } from './src/models/db.js';
-import { getAllOrganizations } from './src/models/organizations.js';
-import { getAllProjects } from './src/models/projects.js';
-import { getAllCategories } from './src/models/categories.js';
+import router from './src/routes.js';
 
 /**
  * Rebuild __filename and __dirname.
@@ -50,43 +48,56 @@ app.set('views', path.join(__dirname, 'src/views'));
  * Configure Express middleware
  */
 
+// Middleware to log all incoming requests
+app.use((req, res, next) => {
+    if (nodeEnv === 'development') {
+        console.log(`${req.method} ${req.url}`);
+    }
+    next(); // Pass control to the next middleware or route
+});
+
+// Middleware to make NodeEnv avaliable to all templates
+app.use((req, res, next) => {
+    res.locals.nodeEnv = nodeEnv;
+    next();
+});
+
 // Serve static files from the public directory. Contents are exposed at the site
 // root, so public/css/main.css is requested as /css/main.css.
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-/**
- * Routes
- *
- * Every route passes a `title` to res.render(). The header partial reads it into
- * the <title> tag, so each page gets its own browser tab label from one place.
- */
 
-// Home - static content only, no database access needed.
-app.get('/', async (req, res) => {
-    const title = 'Home';
-    res.render('home', { title });
+// Use the imported touter for routes
+app.use(router);
+
+// 404 not found error handler
+// Catch-all route for 404 errors
+app.use((req, res, next) => {
+    const err = new Error('Page Not Found');
+    err.status = 404;
+    next(err);
 });
 
-// Organizations - lists every partner organization from the database.
-app.get('/organizations', async (req, res) => {
-    const organizations = await getAllOrganizations();
-    const title = 'Our Partner Organizations';
-
-    res.render(`organizations`, { title, organizations });
-});
-
-// Service projects - lists every project with the organization that runs it.
-app.get('/projects', async (req, res) => {
-    const projects = await getAllProjects();
-    const title = 'Service Projects';
-    res.render('projects', { title, projects });
-});
-
-// Categories - lists every service project category from the database.
-app.get('/categories', async (req, res) => {
-    const categories = await getAllCategories();
-    const title = 'Service Project Categories';
-    res.render('categories', { title, categories });
+// Global error handler
+app.use((err, req, res, next) => {
+    // Log error details for debugging
+    console.error('Error occurred:', err.message);
+    console.error('Stack trace:', err.stack);
+    
+    // Determine status and template
+    const status = err.status || 500;
+    const template = status === 404 ? '404' : '500';
+    
+    // Prepare data for the template
+    const context = {
+        title: status === 404 ? 'Page Not Found' : 'Server Error',
+        error: err.message,
+        stack: err.stack
+    };
+    
+    // Render the appropriate error template
+    res.status(status).render(`errors/${template}`, context);
 });
 
 /**
