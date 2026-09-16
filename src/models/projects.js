@@ -46,10 +46,10 @@ const getProjectsByOrganizationId = async (organizationId) => {
           title,
           description,
           location,
-          date
-        FROM project
+          event_date
+        FROM public.projects
         WHERE organization_id = $1
-        ORDER BY date;
+        ORDER BY event_date;
       `;
       
       const queryParams = [organizationId];
@@ -58,5 +58,73 @@ const getProjectsByOrganizationId = async (organizationId) => {
       return result.rows;
 };
 
+ /**
+   * Fetch the next N upcoming service projects, soonest first.
+   *
+   * "Upcoming" means on or after today, so a project happening later today still
+   * counts. CURRENT_DATE is evaluated by PostgreSQL, not Node, so the cutoff comes
+   * from the database server's clock rather than the web server's.
+   *
+   * @param   {number} number_of_projects  How many projects to return.
+   * @returns {Promise<Array<Object>>} One object per project, with the keys
+   *                                   project_id, title, description, location,
+   *                                   event_date, organization_id, and
+   *                                   organization_name. event_date arrives as a
+   *                                   JavaScript Date.
+   */
+  const getUpcomingProjects = async (number_of_projects) => {
+      const query = `
+          SELECT p.project_id,
+                 p.title,
+                 p.description,
+                 p.location,
+                 p.event_date,
+                 p.organization_id,
+                 o.name AS organization_name
+          FROM public.projects AS p
+          JOIN public.organization AS o
+            ON p.organization_id = o.organization_id
+          WHERE p.event_date >= CURRENT_DATE
+          ORDER BY p.event_date ASC
+          LIMIT $1;
+      `;
+
+      const queryParams = [number_of_projects];
+      const result = await db.query(query, queryParams);
+
+      return result.rows;
+  };
+
+/**
+   * Fetch a single service project by its id, with the organization running it.
+   *
+   * @param   {number|string} projectId  The project_id to look up.
+   * @returns {Promise<Object|null>} One object with the keys project_id, title,
+   *                                 description, location, event_date,
+   *                                 organization_id, and organization_name, or
+   *                                 null when no project has that id.
+   */
+  const getProjectDetails = async (projectId) => {
+      const query = `
+          SELECT p.project_id,
+                 p.title,
+                 p.description,
+                 p.location,
+                 p.event_date,
+                 p.organization_id,
+                 o.name AS organization_name
+          FROM public.projects AS p
+          JOIN public.organization AS o
+            ON p.organization_id = o.organization_id
+          WHERE p.project_id = $1;
+      `;
+
+      const queryParams = [projectId];
+      const result = await db.query(query, queryParams);
+
+      // Return the first row, or null if no project has that id.
+      return result.rows.length > 0 ? result.rows[0] : null;
+  };
+
 // export project functions
-export {getAllProjects, getProjectsByOrganizationId}
+export {getAllProjects, getProjectsByOrganizationId, getUpcomingProjects, getProjectDetails}
