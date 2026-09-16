@@ -24,7 +24,14 @@ const showAllProjectsPage = async (req, res) => {
 
   // Show the details for a single service project
   const showProjectDetailsPage = async (req, res, next) => {
-      const projectId = req.params.id;
+      const projectId = Number(req.params.id); // convert to number because by default it is a string
+      
+      // Validate it is and intinger and not a string for a 500 error just give 404 page not found
+      if (!Number.isInteger(projectId) || projectId < 1) {
+      const err = new Error('Project Not Found');
+      err.status = 404;
+      return next(err);
+  }
       const project = await getProjectDetails(projectId);
 
       if (!project) {

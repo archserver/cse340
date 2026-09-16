@@ -27,10 +27,18 @@ cse340/
 │   ├── css/main.css              Full stylesheet
 │   └── images/                   Logos
 └── src/
+    ├── routes.js                 Maps URL paths to controller functions
+    ├── controllers/              Request handlers; one file per section
+    │   ├── index.js              showHomePage()
+    │   ├── organizations.js      showOrganizationsPage(), showOrganizationDetailsPage()
+    │   ├── projects.js           showProjectsPage(), showProjectDetailsPage(), showAllProjectsPage()
+    │   ├── categories.js         showCategoriesPage()
+    │   └── errors.js             testErrorPage()
     ├── models/                   Database access; no Express or EJS in here
     │   ├── db.js                 Connection pool, query logging, testConnection()
-    │   ├── organizations.js      getAllOrganizations()
-    │   ├── projects.js           getAllProjects() - joins projects to organization
+    │   ├── organizations.js      getAllOrganizations(), getOrganizationDetails()
+    │   ├── projects.js           getAllProjects(), getUpcomingProjects(),
+    │   │                         getProjectDetails(), getProjectsByOrganizationId()
     │   └── categories.js         getAllCategories()
     ├── sql/                      Schema and seed scripts, run by hand
     │   ├── orgsetup.sql          organization table + 3 seed rows
@@ -38,9 +46,15 @@ cse340/
     │   └── categorysetup.sql     category + project_category tables, seed data
     └── views/                    EJS templates
         ├── home.ejs
-        ├── organizations.ejs
-        ├── projects.ejs
+        ├── organizations.ejs     List of partner organizations
+        ├── organization.ejs      One organization, with its projects
+        ├── projects.ejs          Next five upcoming projects
+        ├── project.ejs           One project, with its organization
+        ├── allprojects.ejs       Every project (nothing links here yet)
         ├── categories.ejs
+        ├── errors/
+        │   ├── 404.ejs           Page not found
+        │   └── 500.ejs           Server error; shows the stack in development only
         └── partials/
             ├── header.ejs        Doctype through <nav>
             └── footer.ejs        <footer> through </html>
@@ -48,6 +62,44 @@ cse340/
 
 Files in `public/` are served from the site root, so `public/css/main.css` is
 requested as `/css/main.css`.
+
+## Architecture
+
+The app follows the MVC (model-view-controller) separation. A request moves through
+four files, each with one job:
+
+```
+request  →  src/routes.js        which URL maps to which handler
+         →  src/controllers/*    read the request, call models, choose a view
+         →  src/models/*         SQL only; returns plain JavaScript objects
+         →  src/views/*          HTML only; renders what it is handed
+```
+
+The rules that keep the separation honest:
+
+- **Models import nothing from Express or EJS.** They take plain arguments, return
+  plain objects, and never touch `req` or `res`. That is what lets the same
+  `getProjectsByOrganizationId()` serve a page today and something else later.
+- **Controllers contain no SQL.** They read parameters, call model functions, and
+  hand the result to `res.render()`. A controller is also where a missing row
+  becomes a 404.
+- **Views contain no queries.** They render exactly the object passed in. Anything a
+  template needs — an organization's id for a link, say — has to be selected by the
+  model and passed through by the controller.
+- **`server.js` owns no routes.** It builds the app, registers middleware in order,
+  mounts the router, and starts listening.
+
+The practical payoff is that a bug has one address. A wrong column name is a model
+problem, a 404 that should be a 200 is a routing problem, and a link pointing at
+`/organization/undefined` is a view being handed data the model never selected.
+
+### Naming
+
+Model functions are named for the data they return (`getUpcomingProjects`),
+controllers for the page they produce (`showProjectsPage`). The view name passed to
+`res.render()` matches the template file, and **the key passed to the view must match
+the name the template uses** — `res.render('project', { project })` pairs with
+`project.title` inside `project.ejs`.
 
 ## Database
 
@@ -131,16 +183,111 @@ to be re-run after it.
 
 ## Routes
 
-| Path | View | Data source | Page title |
+All routes live in `src/routes.js` on an `express.Router()`, which `server.js`
+mounts with a single `app.use(router)`.
+
+| Path | Controller | View | Model call |
 | --- | --- | --- | --- |
-| `/` | `home.ejs` | Static | Home |
-| `/organizations` | `organizations.ejs` | `getAllOrganizations()` | Our Partner Organizations |
-| `/projects` | `projects.ejs` | `getAllProjects()` | Service Projects |
-| `/categories` | `categories.ejs` | `getAllCategories()` | Service Project Categories |
+| `/` | `showHomePage` | `home.ejs` | none |
+| `/organizations` | `showOrganizationsPage` | `organizations.ejs` | `getAllOrganizations()` |
+| `/organization/:id` | `showOrganizationDetailsPage` | `organization.ejs` | `getOrganizationDetails()`, `getProjectsByOrganizationId()` |
+| `/projects` | `showProjectsPage` | `projects.ejs` | `getUpcomingProjects(5)` |
+| `/project/:id` | `showProjectDetailsPage` | `project.ejs` | `getProjectDetails()` |
+| `/allprojects` | `showAllProjectsPage` | `allprojects.ejs` | `getAllProjects()` |
+| `/categories` | `showCategoriesPage` | `categories.ejs` | `getAllCategories()` |
+| `/test-error` | `testErrorPage` | `errors/500.ejs` | none; raises a test error |
 
 Each route passes a `title` variable to `res.render()`. The header partial reads it
 into the `<title>` tag, so every page gets its own browser tab label from one place.
-The three database-backed routes additionally pass the rows they loaded.
+
+### Route parameters
+
+`/organization/:id` and `/project/:id` use **route parameters**: `:id` is a named
+placeholder matching one path segment, and Express puts the matched value on
+`req.params` under that name.
+
+```js
+router.get('/project/:id', showProjectDetailsPage);
+
+const projectId = req.params.id;          // "/project/7" → "7"
+```
+
+Three things to keep straight:
+
+- **The names must match.** `:id` in the route means `req.params.id` in the
+  controller. Renaming one without the other yields `undefined`.
+- **A route parameter is not a query parameter.** `/project/7` is a route parameter
+  read from `req.params`; `/project?id=7` would be a query parameter read from
+  `req.query`. This project uses route parameters throughout.
+- **The value is always a string, and it comes from the URL,** so it is untrusted. It
+  is handed to the model as a `$1` placeholder and never concatenated into SQL:
+
+```sql
+WHERE p.project_id = $1
+```
+
+PostgreSQL then treats it strictly as a value, so a crafted URL cannot alter the
+query.
+
+### Not-found handling
+
+An id that parses but matches no row is a separate case. The detail model functions
+return `null` rather than throwing, and the controller turns that into a 404 before
+rendering anything:
+
+```js
+if (!project) {
+    const err = new Error('Project Not Found');
+    err.status = 404;
+    return next(err);
+}
+```
+
+The `return` matters — without it the function carries on to `res.render()` after
+already handing the request off.
+
+## Middleware
+
+`server.js` registers middleware in a deliberate order, because Express runs it in
+registration order and a request stops at the first handler that ends it:
+
+1. **Request logging** — logs method and URL, development only.
+2. **Template locals** — sets `res.locals.nodeEnv`, making it readable by every
+   template without being passed through each `res.render()` call.
+3. **Static files** — `express.static` serves `public/`.
+4. **The router** — every application route.
+5. **404 catch-all** — anything still unmatched becomes a 404 error passed to
+   `next(err)`.
+6. **Error handler** — renders the error page.
+
+Two ordering rules are easy to get wrong:
+
+- **The 404 catch-all must come after the router.** It matches every request, so
+  registering it earlier turns every page into a 404.
+- **The error handler must be registered last.** Express searches only *forward*
+  from the point an error was raised, so a handler registered before the routes never
+  sees their errors, and the built-in handler prints a stack trace instead.
+
+### Error handling
+
+The error handler is identified by its **four** parameters. Arity is the only signal
+Express uses — drop `next` and it silently becomes ordinary middleware:
+
+```js
+app.use((err, req, res, next) => {
+    const status = err.status || 500;
+    const template = status === 404 ? '404' : '500';
+    res.status(status).render(`errors/${template}`, context);
+});
+```
+
+Anything reaching it renders `errors/404.ejs` or `errors/500.ejs` with the matching
+HTTP status. `500.ejs` prints the message and stack only when
+`nodeEnv === 'development'`, so the deployed site never exposes file paths.
+
+Because the app runs Express 5, a rejected promise inside an `async` controller
+reaches this handler automatically — a database failure renders the 500 page with no
+`try`/`catch` in the controller.
 
 ## Getting started
 
@@ -220,8 +367,22 @@ gitignored and never reaches the server.
   and is reconstructed in `server.js` from `import.meta.url`, which keeps paths
   correct on both Windows and Render's Linux containers.
 - **Models are isolated.** Everything in `src/models/` returns plain objects and
-  imports nothing from Express or EJS. Routes stay short, and a query can change
+  imports nothing from Express or EJS. Controllers stay short, and a query can change
   without touching a template.
+- **Ids are validated before they reach the database.** The detail controllers run
+  `Number(req.params.id)` through `Number.isInteger()` and a `< 1` check, so
+  `/project/abc`, `/project/0` and `/project/3.14` render the 404 page instead of
+  throwing a PostgreSQL cast error. Alternate spellings of a valid id (`1.0`, `+1`,
+  `1e0`) resolve to the same record, which is intended.
+- **Detail lookups return one row or null.** `getOrganizationDetails(id)` and
+  `getProjectDetails(id)` end with
+  `return result.rows.length > 0 ? result.rows[0] : null`, which is what lets a
+  controller tell "no such row" apart from a real result and answer with a 404.
+- **`getUpcomingProjects(n)` takes the count as an argument** rather than hardcoding
+  five. The controller holds that policy in `NUMBER_OF_UPCOMING_PROJECTS`; the model
+  stays reusable. The count binds as `LIMIT $1` rather than being interpolated, and
+  "upcoming" means `event_date >= CURRENT_DATE`, evaluated by PostgreSQL rather than
+  by Node.
 - **Connection pooling.** `db.js` creates one `pg` `Pool` for the whole process
   rather than connecting per request. In development, with `ENABLE_SQL_LOGGING=true`,
   the pool is wrapped so each query logs its SQL, duration, and row count.
@@ -229,12 +390,16 @@ gitignored and never reaches the server.
   `ssl: { rejectUnauthorized: false }`. The connection is still encrypted, but the
   certificate chain is not verified. A production system handling real data should
   verify it instead.
-- **Joining for display.** `getAllProjects()` joins `projects` to `organization` so
+- **Joining for display.** The project queries join `projects` to `organization` so
   each row arrives with `organization_name` already attached. The alternative — one
-  query per project to look up its organization — is the N+1 query problem.
+  query per project to look up its organization — is the N+1 query problem. They also
+  select `p.organization_id`, because a view needs the id to build a link to
+  `/organization/:id` and the name alone is not enough.
 - **Date handling.** `pg` converts a `DATE` column into a JavaScript `Date`, so
-  `projects.ejs` formats it with `toLocaleDateString()`. Printed raw it would render
-  as a full timestamp.
+  `projects.ejs` and `project.ejs` format it with `toLocaleDateString()`. Printed raw
+  it would render as a full timestamp. That formatting call is currently duplicated in
+  both templates; a helper on `app.locals` would centralize it if a third page ever
+  needs it.
 - **Partials.** `header.ejs` and `footer.ejs` are included by every page, so shared
   markup such as the navigation is edited in one file. Neither is a complete
   document on its own; each page is valid only once the three are combined.
@@ -252,10 +417,9 @@ gitignored and never reaches the server.
 
 ## Known gaps
 
-- Routes do not wrap their model calls in `try`/`catch`, so a database failure
-  surfaces as a bare "Internal Server Error" with nothing logged against the
-  request. Adding a `catch` that logs and forwards to `next(error)`, plus an
-  error-handling middleware, is the next improvement.
+- `/allprojects` works but nothing links to it; it is reachable only by typing the
+  URL. Its organization names are plain text rather than links, because
+  `getAllProjects()` does not select `organization_id`.
 - `project_category` is created and seeded, but nothing surfaces it yet. The
   categories page lists categories on their own; showing each project's categories
   (or filtering projects by category) means a three-table join through the
