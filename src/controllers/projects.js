@@ -1,5 +1,6 @@
 // Import any model functions to retrieve information from the projects table in the DB
 import { getAllProjects, getUpcomingProjects, getProjectDetails } from '../models/projects.js';
+import { getCategoriesByProjectId } from '../models/categories.js';
 
 // How many upcoming projects the /projects page lists. Named rather than passing
   // a bare 5 to the model, so the number has a meaning attached to it and changes
@@ -40,9 +41,10 @@ const showAllProjectsPage = async (req, res) => {
           return next(err);
       }
 
+      const categories = await getCategoriesByProjectId(projectId);
       const title = project.title;
 
-      res.render('project', { title, project });
+      res.render('project', { title, project, categories });
   };
 
 // Export project controller functions

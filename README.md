@@ -32,14 +32,16 @@ cse340/
     │   ├── index.js              showHomePage()
     │   ├── organizations.js      showOrganizationsPage(), showOrganizationDetailsPage()
     │   ├── projects.js           showProjectsPage(), showProjectDetailsPage(), showAllProjectsPage()
-    │   ├── categories.js         showCategoriesPage()
+    │   ├── categories.js         showCategoriesPage(), showCategoryDetailsPage()
     │   └── errors.js             testErrorPage()
     ├── models/                   Database access; no Express or EJS in here
     │   ├── db.js                 Connection pool, query logging, testConnection()
     │   ├── organizations.js      getAllOrganizations(), getOrganizationDetails()
     │   ├── projects.js           getAllProjects(), getUpcomingProjects(),
-    │   │                         getProjectDetails(), getProjectsByOrganizationId()
-    │   └── categories.js         getAllCategories()
+    │   │                         getProjectDetails(), getProjectsByOrganizationId(),
+    │   │                         getProjectsByCategoryId()
+    │   └── categories.js         getAllCategories(), getCategoryDetails(),
+    │                             getCategoriesByProjectId()
     ├── sql/                      Schema and seed scripts, run by hand
     │   ├── orgsetup.sql          organization table + 3 seed rows
     │   ├── projectsetup.sql      projects table + 15 seed rows
@@ -49,9 +51,10 @@ cse340/
         ├── organizations.ejs     List of partner organizations
         ├── organization.ejs      One organization, with its projects
         ├── projects.ejs          Next five upcoming projects
-        ├── project.ejs           One project, with its organization
+        ├── project.ejs           One project, with its organization and category tags
         ├── allprojects.ejs       Every project (nothing links here yet)
-        ├── categories.ejs
+        ├── categories.ejs        List of categories
+        ├── category.ejs          One category, with its projects
         ├── errors/
         │   ├── 404.ejs           Page not found
         │   └── 500.ejs           Server error; shows the stack in development only
@@ -155,6 +158,12 @@ file the same project under the same category twice — something a surrogate id
 would happily allow. The table carries no other data; tables shaped this way are
 also called bridge, join, or associative tables.
 
+The site reads the junction table in both directions. `getCategoriesByProjectId()`
+starts from a project and joins `project_category` to `category`;
+`getProjectsByCategoryId()` starts from a category and joins `project_category` to
+`projects`. Each is a single join from the junction table to the side being
+returned — neither query needs all three tables.
+
 Column names are not prefixed with the table name — the table already supplies that
 context, so it is `organization.name`, not `organization.organization_name`. The one
 place this needs care is a join: `organization`, `projects`, and `category` all
@@ -192,19 +201,35 @@ mounts with a single `app.use(router)`.
 | `/organizations` | `showOrganizationsPage` | `organizations.ejs` | `getAllOrganizations()` |
 | `/organization/:id` | `showOrganizationDetailsPage` | `organization.ejs` | `getOrganizationDetails()`, `getProjectsByOrganizationId()` |
 | `/projects` | `showProjectsPage` | `projects.ejs` | `getUpcomingProjects(5)` |
-| `/project/:id` | `showProjectDetailsPage` | `project.ejs` | `getProjectDetails()` |
+| `/project/:id` | `showProjectDetailsPage` | `project.ejs` | `getProjectDetails()`, `getCategoriesByProjectId()` |
 | `/allprojects` | `showAllProjectsPage` | `allprojects.ejs` | `getAllProjects()` |
 | `/categories` | `showCategoriesPage` | `categories.ejs` | `getAllCategories()` |
+| `/category/:id` | `showCategoryDetailsPage` | `category.ejs` | `getCategoryDetails()`, `getProjectsByCategoryId()` |
 | `/test-error` | `testErrorPage` | `errors/500.ejs` | none; raises a test error |
 
 Each route passes a `title` variable to `res.render()`. The header partial reads it
 into the `<title>` tag, so every page gets its own browser tab label from one place.
 
+### How the pages link together
+
+```
+/organizations ──► /organization/:id ◄──► /project/:id ◄──► /category/:id ◄── /categories
+                                                ▲
+/projects ──────────────────────────────────────┘   (each row also links to its organization)
+```
+
+- An organization page lists its projects; a project page links back to its
+  organization.
+- A project page shows its categories as tags; a category page lists its projects.
+  Both directions read the same `project_category` rows, so they always agree.
+- The list pages (`/organizations`, `/projects`, `/categories`) link into the
+  detail pages.
+
 ### Route parameters
 
-`/organization/:id` and `/project/:id` use **route parameters**: `:id` is a named
-placeholder matching one path segment, and Express puts the matched value on
-`req.params` under that name.
+`/organization/:id`, `/project/:id`, and `/category/:id` use **route parameters**:
+`:id` is a named placeholder matching one path segment, and Express puts the matched
+value on `req.params` under that name.
 
 ```js
 router.get('/project/:id', showProjectDetailsPage);
@@ -371,11 +396,11 @@ gitignored and never reaches the server.
   without touching a template.
 - **Ids are validated before they reach the database.** The detail controllers run
   `Number(req.params.id)` through `Number.isInteger()` and a `< 1` check, so
-  `/project/abc`, `/project/0` and `/project/3.14` render the 404 page instead of
+  `/project/abc`, `/category/0` and `/organization/3.14` render the 404 page instead of
   throwing a PostgreSQL cast error. Alternate spellings of a valid id (`1.0`, `+1`,
   `1e0`) resolve to the same record, which is intended.
-- **Detail lookups return one row or null.** `getOrganizationDetails(id)` and
-  `getProjectDetails(id)` end with
+- **Detail lookups return one row or null.** `getOrganizationDetails(id)`,
+  `getProjectDetails(id)`, and `getCategoryDetails(id)` end with
   `return result.rows.length > 0 ? result.rows[0] : null`, which is what lets a
   controller tell "no such row" apart from a real result and answer with a 404.
 - **`getUpcomingProjects(n)` takes the count as an argument** rather than hardcoding
@@ -383,6 +408,17 @@ gitignored and never reaches the server.
   stays reusable. The count binds as `LIMIT $1` rather than being interpolated, and
   "upcoming" means `event_date >= CURRENT_DATE`, evaluated by PostgreSQL rather than
   by Node.
+- **A model function lives with the table it returns.** `getProjectsByCategoryId()`
+  is in `models/projects.js` and `getCategoriesByProjectId()` is in
+  `models/categories.js`, even though each looks up by the other side's id — the same
+  rule that puts `getProjectsByOrganizationId()` in `projects.js`. Controllers are
+  organized by page instead, so they import across: `controllers/categories.js` pulls
+  from `models/projects.js` because the category page lists projects, and
+  `controllers/projects.js` pulls from `models/categories.js` because the project
+  page shows category tags.
+- **Related rows are fetched after the not-found check.** The detail controllers
+  confirm the main record exists before querying anything related to it, so an id
+  that matches nothing costs one query rather than two.
 - **Connection pooling.** `db.js` creates one `pg` `Pool` for the whole process
   rather than connecting per request. In development, with `ENABLE_SQL_LOGGING=true`,
   the pool is wrapped so each query logs its SQL, duration, and row count.
@@ -396,10 +432,10 @@ gitignored and never reaches the server.
   select `p.organization_id`, because a view needs the id to build a link to
   `/organization/:id` and the name alone is not enough.
 - **Date handling.** `pg` converts a `DATE` column into a JavaScript `Date`, so
-  `projects.ejs` and `project.ejs` format it with `toLocaleDateString()`. Printed raw
-  it would render as a full timestamp. That formatting call is currently duplicated in
-  both templates; a helper on `app.locals` would centralize it if a third page ever
-  needs it.
+  `projects.ejs`, `project.ejs`, and `category.ejs` format it with
+  `toLocaleDateString()`. Printed raw it would render as a full timestamp. The same
+  formatting call is now repeated in three templates; a helper on `app.locals` would
+  define the format once.
 - **Partials.** `header.ejs` and `footer.ejs` are included by every page, so shared
   markup such as the navigation is edited in one file. Neither is a complete
   document on its own; each page is valid only once the three are combined.
@@ -410,6 +446,12 @@ gitignored and never reaches the server.
 - **Responsive CSS.** The stylesheet uses custom properties for colors and spacing,
   `clamp()` for fluid type, and CSS grid for the card lists. Two breakpoints refine
   the phone and wide-desktop ends.
+- **Cards versus tags.** Every `<ul>` inside `<main>` is styled as a list of cards,
+  which suits primary content — the records a page exists to browse. Category tags on
+  a project page are different: they are links through the `project_category`
+  relation, secondary to the project itself. That list carries `class="tags"`, and
+  section 7a of the stylesheet resets the inherited card styles and draws each link as
+  a pill.
 - **Accessibility.** Colors meet WCAG AA contrast, `:focus-visible` provides a
   keyboard focus ring, `prefers-reduced-motion` is respected, and the uppercase
   `h1` styling is applied with `text-transform` rather than typed as capitals, so
@@ -420,10 +462,7 @@ gitignored and never reaches the server.
 - `/allprojects` works but nothing links to it; it is reachable only by typing the
   URL. Its organization names are plain text rather than links, because
   `getAllProjects()` does not select `organization_id`.
-- `project_category` is created and seeded, but nothing surfaces it yet. The
-  categories page lists categories on their own; showing each project's categories
-  (or filtering projects by category) means a three-table join through the
-  junction table.
+- The date format is duplicated across three templates rather than defined once.
 
 ## Course
 

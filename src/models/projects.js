@@ -126,5 +126,25 @@ const getProjectsByOrganizationId = async (organizationId) => {
       return result.rows.length > 0 ? result.rows[0] : null;
   };
 
+  /**
+   * Fetch every service project in a category, through project_category.
+   *
+   * @returns {Promise<Array<Object>>} project_id, title, and event_date, soonest first.
+   */
+  const getProjectsByCategoryId = async (categoryId) => {
+      const query = `
+          SELECT p.project_id, p.title, p.event_date
+          FROM public.projects AS p
+          JOIN public.project_category AS pc
+            ON pc.project_id = p.project_id
+          WHERE pc.category_id = $1
+          ORDER BY p.event_date;
+      `;
+
+      const result = await db.query(query, [categoryId]);
+
+      return result.rows;
+  };
+
 // export project functions
-export {getAllProjects, getProjectsByOrganizationId, getUpcomingProjects, getProjectDetails}
+export {getAllProjects, getProjectsByOrganizationId, getUpcomingProjects, getProjectDetails, getProjectsByCategoryId}

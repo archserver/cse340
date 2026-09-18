@@ -1,0 +1,24 @@
+<%# Category details page. Receives `title`, `category`, and `projects` from the %>
+  <%# /category/:id route.                                                         %>
+  <%- include('partials/header') %>
+      <main>
+          <h1><%= category.name %></h1>
+          <p><%= category.description %></p>
+
+          <h2>Service Projects</h2>
+          <% if (projects.length > 0) { %>
+              <ul>
+                  <% projects.forEach(project => { %>
+                      <li>
+                          <%= project.event_date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>:
+                          <a href="/project/<%= project.project_id %>"><%= project.title %></a>
+                      </li>
+                  <% }); %>
+              </ul>
+          <% } else { %>
+              <p>No service projects are in this category yet.</p>
+          <% } %>
+
+          <p><a href="/categories">Back to all categories</a></p>
+      </main>
+  <%- include('partials/footer') %>

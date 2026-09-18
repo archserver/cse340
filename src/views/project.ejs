@@ -14,6 +14,14 @@
               <dt>Organization</dt>
               <dd><a href="/organization/<%= project.organization_id %>"><%= project.organization_name %></a></dd>
           </dl>
+            <% if (categories.length > 0) { %>
+                <h2>Categories</h2>
+                <ul class="tags">
+                    <% categories.forEach(category => { %>
+                        <li><a href="/category/<%= category.category_id %>"><%= category.name %></a></li>
+                    <% }); %>
+                </ul>
+            <% } %>
           <p><a href="/projects">Back to upcoming projects</a></p>
       </main>
   <%- include('partials/footer') %>

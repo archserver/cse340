@@ -6,7 +6,7 @@
         <h2>Service Project Categories</h2>
         <ul>
             <% categories.forEach(category => { %>
-                <li><strong><%= category.name %></strong> - <%= category.description %></li>
+                 <li><a href="/category/<%= category.category_id %>"><strong><%= category.name %></strong></a> - <%= category.description %></li>
             <% }); %>
         </ul>
     </main>

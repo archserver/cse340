@@ -215,6 +215,49 @@ main li img {
 }
 
 /* --------------------------------------------------------------------------
+7a. TAGS
+Category links on the project details page. The tag list is a <ul> inside
+<main>, so it would otherwise inherit the card styles from section 7 -
+the .tags li rules below undo those.
+-------------------------------------------------------------------------- */
+.tags {
+    display: flex;            /* overrides the card grid from main ul */
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-top: var(--space-sm);
+}
+
+  .tags li {
+    /* undo the card styles inherited from main li */
+    background: none;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    transition: none;
+  }
+
+  .tags li:hover {
+    transform: none;          /* no card lift on hover */
+  }
+
+  .tags a {
+    display: inline-block;
+    padding: 0.25rem var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;     /* pill shape at any height */
+    background-color: var(--color-surface);
+    color: var(--color-brand-light);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+
+  .tags a:hover {
+    border-color: var(--color-brand-light);
+    background-color: var(--color-page);
+  }
+
+/* --------------------------------------------------------------------------
    8. IMAGES
    -------------------------------------------------------------------------- */
 .main-logo {
