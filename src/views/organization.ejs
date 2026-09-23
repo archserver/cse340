@@ -12,5 +12,6 @@
                 <li><a href="/project/<%= project.project_id %>"><%= project.title %></a></li>
             <% }) %>
         </ul>
+        <p><a href="/edit-organization/<%= organizationDetails.organization_id %>">Edit the current organization</a></p>
     </main>
 <%- include('partials/footer') %>

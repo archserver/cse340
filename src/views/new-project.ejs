@@ -1,0 +1,69 @@
+<%# Add-a-service-project form. Receives `title` and `organizations` from the    %>
+<%# /new-project route, which loads the dropdown list via getAllOrganizations(). %>
+<%- include('partials/header') %>
+<main>
+    <h1><%= title %></h1>
+
+  <form action="/new-project" method="POST">
+    <div class="form-group">
+      <label for="title">Project Title</label>
+      <input
+        type="text"
+        id="title"
+        name="title"
+        minlength="3"
+        maxlength="200"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea
+        id="description"
+        name="description"
+        maxlength="1000"
+        required
+      ></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="location">Location</label>
+      <input
+        type="text"
+        id="location"
+        name="location"
+        maxlength="200"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="date">Event Date</label>
+      <%# type="date" gives a native date picker and submits YYYY-MM-DD, which %>
+      <%# PostgreSQL accepts directly for the event_date column.               %>
+      <input
+        type="date"
+        id="date"
+        name="date"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="organizationId">Organization</label>
+      <%# The empty first option paired with `required` forces a deliberate    %>
+      <%# choice - without it the browser preselects the first organization.   %>
+      <select id="organizationId" name="organizationId" required>
+        <option value="">Select an organization</option>
+        <% organizations.forEach(organization => { %>
+          <option value="<%= organization.organization_id %>"><%= organization.name %></option>
+        <% }); %>
+      </select>
+    </div>
+
+    <button type="submit">Create Project</button>
+  </form>
+
+</main>
+<%- include('partials/footer') %>

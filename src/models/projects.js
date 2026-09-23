@@ -146,5 +146,42 @@ const getProjectsByOrganizationId = async (organizationId) => {
       return result.rows;
   };
 
+/**
+   * Insert a new service project and return its generated id.
+   *
+   * RETURNING is a PostgreSQL feature that hands back a column from the row just
+   * inserted, so the caller learns the new project_id without a second SELECT.
+   * The date arrives from the form as a YYYY-MM-DD string, which PostgreSQL
+   * accepts directly for a date column - no parsing is needed in Node.
+   *
+   * Note the column is event_date, not date, and the table is plural (projects)
+   * unlike organization.
+   *
+   * @param   {string} title           The project title.
+   * @param   {string} description     A description of the project.
+   * @param   {string} location        Where the project takes place.
+   * @param   {string} date            The event date as YYYY-MM-DD.
+   * @param   {number} organizationId  The organization running the project.
+   * @returns {Promise<number>} The id of the newly created project.
+   */
+  const createProject = async (title, description, location, date, organizationId) => {
+      const query = `
+          INSERT INTO public.projects (title, description, location, event_date, organization_id)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING project_id;
+      `;
+
+      const queryParams = [title, description, location, date, organizationId];
+      const result = await db.query(query, queryParams);
+
+      // An INSERT ... RETURNING always yields a row on success, so an empty
+      // result means the insert did not happen and the caller must not continue.
+      if (result.rows.length === 0) {
+          throw new Error('Failed to create project');
+      }
+
+      return result.rows[0].project_id;
+  };
+
 // export project functions
-export {getAllProjects, getProjectsByOrganizationId, getUpcomingProjects, getProjectDetails, getProjectsByCategoryId}
+export {getAllProjects, getProjectsByOrganizationId, getUpcomingProjects, getProjectDetails, getProjectsByCategoryId, createProject}

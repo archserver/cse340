@@ -1,0 +1,39 @@
+<%# Assign-categories form. Receives `title`, `project`, `categories` (all of    %>
+<%# them) and `assignedCategories` (the project's current ones) from the        %>
+<%# /assign-categories/:projectId route.                                        %>
+<%- include('partials/header') %>
+<main>
+    <h1><%= title %></h1>
+    <h2><%= project.title %></h2>
+
+  <%# Build a plain array of the ids already assigned, so the check inside the  %>
+  <%# loop below is a simple includes() rather than a nested search each time.  %>
+  <% const assignedIds = assignedCategories.map(category => category.category_id); %>
+
+  <form action="/assign-categories/<%= project.project_id %>" method="POST">
+    <fieldset>
+      <legend>Categories</legend>
+
+      <% categories.forEach(category => { %>
+        <div class="form-check">
+          <%# Every box shares the name categoryIds, which is what makes the    %>
+          <%# browser submit them as a group rather than as separate fields.    %>
+          <input
+            type="checkbox"
+            id="category-<%= category.category_id %>"
+            name="categoryIds"
+            value="<%= category.category_id %>"
+            <%= assignedIds.includes(category.category_id) ? 'checked' : '' %>
+          />
+          <label for="category-<%= category.category_id %>"><%= category.name %></label>
+        </div>
+      <% }); %>
+    </fieldset>
+
+    <button type="submit">Update Categories</button>
+  </form>
+
+  <p><a href="/project/<%= project.project_id %>">Back to project details</a></p>
+
+</main>
+<%- include('partials/footer') %>

@@ -6,10 +6,12 @@
  */
 
 import express from 'express';
+import session from 'express-session';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { testConnection } from './src/models/db.js';
 import router from './src/routes.js';
+import flash from './src/middleware/flash.js';
 
 /**
  * Rebuild __filename and __dirname.
@@ -31,6 +33,7 @@ const __dirname = path.dirname(__filename);
  */
 const nodeEnv = process.env.NODE_ENV?.toLowerCase() || 'production';
 const hostPort = process.env.PORT || 3000;
+const sessionSecret = process.env.SESSION_SECRET;
 
 const app = express();
 
@@ -47,6 +50,21 @@ app.set('views', path.join(__dirname, 'src/views'));
 /**
  * Configure Express middleware
  */
+
+// Set up session management
+app.use(session({
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: true,
+    cookie: { maxAge: 60 * 60 * 1000 } // Session expires after 1 hour of inactivity
+}));
+
+ // Allow Express to receive and process common POST data
+  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json());
+
+// Use flash message middleware
+app.use(flash);
 
 // Middleware to log all incoming requests
 app.use((req, res, next) => {
@@ -68,7 +86,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-// Use the imported touter for routes
+// Use the imported router for routes
 app.use(router);
 
 // 404 not found error handler
