@@ -183,5 +183,41 @@ const getProjectsByOrganizationId = async (organizationId) => {
       return result.rows[0].project_id;
   };
 
+/**
+   * Update an existing service project.
+   *
+   * organization_id is included so a project can be reassigned to a different
+   * organization as part of the edit, not just have its text fields changed.
+   *
+   * RETURNING gives back the id only when a row actually matched. An empty
+   * result therefore means no project had that id, which is an error the caller
+   * needs to know about rather than a silent no-op.
+   *
+   * @param   {number} projectId       The project to update.
+   * @param   {string} title           The project title.
+   * @param   {string} description     A description of the project.
+   * @param   {string} location        Where the project takes place.
+   * @param   {string} date            The event date as YYYY-MM-DD.
+   * @param   {number} organizationId  The organization running the project.
+   * @returns {Promise<number>} The id of the updated project.
+   */
+  const updateProject = async (projectId, title, description, location, date, organizationId) => {
+      const query = `
+          UPDATE public.projects
+          SET title = $1, description = $2, location = $3, event_date = $4, organization_id = $5
+          WHERE project_id = $6
+          RETURNING project_id;
+      `;
+
+      const queryParams = [title, description, location, date, organizationId, projectId];
+      const result = await db.query(query, queryParams);
+
+      if (result.rows.length === 0) {
+          throw new Error('Project not found');
+      }
+
+      return result.rows[0].project_id;
+  };
+
 // export project functions
-export {getAllProjects, getProjectsByOrganizationId, getUpcomingProjects, getProjectDetails, getProjectsByCategoryId, createProject}
+export {getAllProjects, getProjectsByOrganizationId, getUpcomingProjects, getProjectDetails, getProjectsByCategoryId, createProject, updateProject}

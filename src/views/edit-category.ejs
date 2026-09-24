@@ -1,0 +1,39 @@
+<%# Edit-category form. Receives `title` and `category` from the               %>
+<%# /edit-category/:id route.                                                  %>
+<%- include('partials/header') %>
+<main>
+    <h1><%= title %></h1>
+
+    <form action="/edit-category/<%= category.category_id %>" method="POST">
+      <div class="form-group">
+        <label for="name">Category Name</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          minlength="3"
+          maxlength="100"
+          value="<%= category.name %>"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <%# The tag sits immediately after the > so no leading whitespace or     %>
+        <%# newline becomes part of the textarea's value.                        %>
+        <textarea
+          id="description"
+          name="description"
+          maxlength="500"
+          required
+        ><%= category.description %></textarea>
+      </div>
+
+      <button type="submit">Update Category</button>
+    </form>
+
+    <p><a href="/category/<%= category.category_id %>">Back to category details</a></p>
+
+</main>
+<%- include('partials/footer') %>

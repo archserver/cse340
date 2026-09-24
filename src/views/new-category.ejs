@@ -1,0 +1,36 @@
+<%# Add-a-category form. Receives `title` from the /new-category route.        %>
+<%- include('partials/header') %>
+<main>
+    <h1><%= title %></h1>
+
+    <form action="/new-category" method="POST">
+      <div class="form-group">
+        <label for="name">Category Name</label>
+        <%# maxlength matches category.name's varchar(100) and the server rule.  %>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          minlength="3"
+          maxlength="100"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          name="description"
+          maxlength="500"
+          required
+        ></textarea>
+      </div>
+
+      <button type="submit">Create Category</button>
+    </form>
+
+    <p><a href="/categories">Back to all categories</a></p>
+
+</main>
+<%- include('partials/footer') %>

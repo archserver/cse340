@@ -1,0 +1,80 @@
+<%# Edit-service-project form. Receives `title`, `project` and `organizations`   %>
+<%# from the /edit-project/:id route.                                           %>
+<%- include('partials/header') %>
+<main>
+    <h1><%= title %></h1>
+
+  <form action="/edit-project/<%= project.project_id %>" method="POST">
+    <div class="form-group">
+      <label for="title">Project Title</label>
+      <input
+        type="text"
+        id="title"
+        name="title"
+        minlength="3"
+        maxlength="150"
+        value="<%= project.title %>"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <%# The tag sits immediately after the > so no leading whitespace or      %>
+      <%# newline becomes part of the textarea's value.                         %>
+      <textarea
+        id="description"
+        name="description"
+        maxlength="500"
+        required
+      ><%= project.description %></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="location">Location</label>
+      <input
+        type="text"
+        id="location"
+        name="location"
+        maxlength="250"
+        value="<%= project.location %>"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="date">Event Date</label>
+      <%# event_date arrives from pg as a JavaScript Date. type="date" needs a  %>
+      <%# plain YYYY-MM-DD string. en-CA formats in exactly that shape and      %>
+      <%# reads the LOCAL date, unlike toISOString(), which converts to UTC and %>
+      <%# can shift the day by one either side of midnight.                     %>
+      <input
+        type="date"
+        id="date"
+        name="date"
+        value="<%= project.event_date.toLocaleDateString('en-CA') %>"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="organizationId">Organization</label>
+      <%# The project's current organization is marked selected so the dropdown %>
+      <%# opens on the right value instead of defaulting to the first entry.    %>
+      <select id="organizationId" name="organizationId" required>
+        <% organizations.forEach(organization => { %>
+          <option
+            value="<%= organization.organization_id %>"
+            <%= organization.organization_id === project.organization_id ? 'selected' : '' %>
+          ><%= organization.name %></option>
+        <% }); %>
+      </select>
+    </div>
+
+    <button type="submit">Update Project</button>
+  </form>
+
+  <p><a href="/project/<%= project.project_id %>">Back to project details</a></p>
+
+</main>
+<%- include('partials/footer') %>

@@ -30,18 +30,25 @@ cse340/
     ├── routes.js                 Maps URL paths to controller functions
     ├── controllers/              Request handlers; one file per section
     │   ├── index.js              showHomePage()
-    │   ├── organizations.js      showOrganizationsPage(), showOrganizationDetailsPage()
-    │   ├── projects.js           showProjectsPage(), showProjectDetailsPage(), showAllProjectsPage()
-    │   ├── categories.js         showCategoriesPage(), showCategoryDetailsPage()
+    │   ├── organizations.js      show/process New + Edit Organization forms,
+    │   │                         organizationValidation, list and detail pages
+    │   ├── projects.js           show/process New + Edit Project forms,
+    │   │                         projectValidation, list and detail pages
+    │   ├── categories.js         show/process New + Edit Category forms,
+    │   │                         categoryValidation, assign-categories form,
+    │   │                         list and detail pages
     │   └── errors.js             testErrorPage()
     ├── models/                   Database access; no Express or EJS in here
     │   ├── db.js                 Connection pool, query logging, testConnection()
-    │   ├── organizations.js      getAllOrganizations(), getOrganizationDetails()
+    │   ├── organizations.js      getAllOrganizations(), getOrganizationDetails(),
+    │   │                         createOrganization(), updateOrganization()
     │   ├── projects.js           getAllProjects(), getUpcomingProjects(),
     │   │                         getProjectDetails(), getProjectsByOrganizationId(),
-    │   │                         getProjectsByCategoryId()
+    │   │                         getProjectsByCategoryId(), createProject(),
+    │   │                         updateProject()
     │   └── categories.js         getAllCategories(), getCategoryDetails(),
-    │                             getCategoriesByProjectId()
+    │                             getCategoriesByProjectId(), createCategory(),
+    │                             updateCategory(), updateCategoryAssignments()
     ├── sql/                      Schema and seed scripts, run by hand
     │   ├── orgsetup.sql          organization table + 3 seed rows
     │   ├── projectsetup.sql      projects table + 15 seed rows
@@ -55,6 +62,13 @@ cse340/
         ├── allprojects.ejs       Every project (nothing links here yet)
         ├── categories.ejs        List of categories
         ├── category.ejs          One category, with its projects
+        ├── new-organization.ejs  Add an organization
+        ├── edit-organization.ejs Edit an organization, fields pre-filled
+        ├── new-project.ejs       Add a project; organization dropdown
+        ├── edit-project.ejs      Edit a project; dropdown pre-selected
+        ├── new-category.ejs      Add a category
+        ├── edit-category.ejs     Edit a category, fields pre-filled
+        ├── assign-categories.ejs Checkbox list of every category for one project
         ├── errors/
         │   ├── 404.ejs           Page not found
         │   └── 500.ejs           Server error; shows the stack in development only
@@ -195,17 +209,47 @@ to be re-run after it.
 All routes live in `src/routes.js` on an `express.Router()`, which `server.js`
 mounts with a single `app.use(router)`.
 
+### Read routes
+
 | Path | Controller | View | Model call |
 | --- | --- | --- | --- |
-| `/` | `showHomePage` | `home.ejs` | none |
-| `/organizations` | `showOrganizationsPage` | `organizations.ejs` | `getAllOrganizations()` |
-| `/organization/:id` | `showOrganizationDetailsPage` | `organization.ejs` | `getOrganizationDetails()`, `getProjectsByOrganizationId()` |
-| `/projects` | `showProjectsPage` | `projects.ejs` | `getUpcomingProjects(5)` |
-| `/project/:id` | `showProjectDetailsPage` | `project.ejs` | `getProjectDetails()`, `getCategoriesByProjectId()` |
-| `/allprojects` | `showAllProjectsPage` | `allprojects.ejs` | `getAllProjects()` |
-| `/categories` | `showCategoriesPage` | `categories.ejs` | `getAllCategories()` |
-| `/category/:id` | `showCategoryDetailsPage` | `category.ejs` | `getCategoryDetails()`, `getProjectsByCategoryId()` |
-| `/test-error` | `testErrorPage` | `errors/500.ejs` | none; raises a test error |
+| `GET /` | `showHomePage` | `home.ejs` | none |
+| `GET /organizations` | `showOrganizationsPage` | `organizations.ejs` | `getAllOrganizations()` |
+| `GET /organization/:id` | `showOrganizationDetailsPage` | `organization.ejs` | `getOrganizationDetails()`, `getProjectsByOrganizationId()` |
+| `GET /projects` | `showProjectsPage` | `projects.ejs` | `getUpcomingProjects(5)` |
+| `GET /project/:id` | `showProjectDetailsPage` | `project.ejs` | `getProjectDetails()`, `getCategoriesByProjectId()` |
+| `GET /allprojects` | `showAllProjectsPage` | `allprojects.ejs` | `getAllProjects()` |
+| `GET /categories` | `showCategoriesPage` | `categories.ejs` | `getAllCategories()` |
+| `GET /category/:id` | `showCategoryDetailsPage` | `category.ejs` | `getCategoryDetails()`, `getProjectsByCategoryId()` |
+| `GET /test-error` | `testErrorPage` | `errors/500.ejs` | none; raises a test error |
+
+### Write routes
+
+Each form is two routes sharing one path: a `GET` that renders the form and a
+`POST` that processes the submission. The `POST` runs its validation array as
+middleware before the controller.
+
+| Path | Controller | View / redirect | Model call |
+| --- | --- | --- | --- |
+| `GET /new-organization` | `showNewOrganizationForm` | `new-organization.ejs` | none |
+| `POST /new-organization` | `processNewOrganizationForm` | → `/organization/:id` | `createOrganization()` |
+| `GET /edit-organization/:id` | `showEditOrganizationForm` | `edit-organization.ejs` | `getOrganizationDetails()` |
+| `POST /edit-organization/:id` | `processEditOrganizationForm` | → `/organization/:id` | `updateOrganization()` |
+| `GET /new-project` | `showNewProjectForm` | `new-project.ejs` | `getAllOrganizations()` |
+| `POST /new-project` | `processNewProjectForm` | → `/projects` | `createProject()` |
+| `GET /edit-project/:id` | `showEditProjectForm` | `edit-project.ejs` | `getProjectDetails()`, `getAllOrganizations()` |
+| `POST /edit-project/:id` | `processEditProjectForm` | → `/project/:id` | `updateProject()` |
+| `GET /new-category` | `showNewCategoryForm` | `new-category.ejs` | none |
+| `POST /new-category` | `processNewCategoryForm` | → `/category/:id` | `createCategory()` |
+| `GET /edit-category/:id` | `showEditCategoryForm` | `edit-category.ejs` | `getCategoryDetails()` |
+| `POST /edit-category/:id` | `processEditCategoryForm` | → `/category/:id` | `updateCategory()` |
+| `GET /assign-categories/:projectId` | `showAssignCategoriesForm` | `assign-categories.ejs` | `getProjectDetails()`, `getAllCategories()`, `getCategoriesByProjectId()` |
+| `POST /assign-categories/:projectId` | `processAssignCategoriesForm` | → `/project/:id` | `updateCategoryAssignments()` |
+
+The `GET` form routes load whatever the form needs beyond the record itself — the
+project forms fetch every organization so the dropdown has options, and the assign
+form fetches every category plus the project's current ones so the right checkboxes
+start ticked.
 
 Each route passes a `title` variable to `res.render()`. The header partial reads it
 into the `<title>` tag, so every page gets its own browser tab label from one place.
@@ -270,6 +314,182 @@ if (!project) {
 
 The `return` matters — without it the function carries on to `res.render()` after
 already handing the request off.
+
+## Forms and validation
+
+### Reading a submitted form
+
+`server.js` registers two body parsers above the router, so `req.body` is populated
+before any route handler runs:
+
+```js
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+```
+
+`express.urlencoded` handles what a normal HTML `<form method="POST">` sends.
+Registering it *after* `app.use(router)` would leave `req.body` undefined, because
+middleware runs in registration order.
+
+### Two layers, and only one of them enforces anything
+
+Every form carries HTML attributes — `required`, `maxlength`, `minlength`,
+`type="date"` — and every `POST` route runs a matching `express-validator` array.
+These are not redundant; they do different jobs.
+
+The HTML attributes are a **convenience**. They catch mistakes before a round-trip
+and tell the user immediately. They vanish entirely if someone edits the DOM,
+replays the request, or submits with `curl`:
+
+```bash
+curl -X POST http://localhost:3000/new-project -d "title=x&organizationId=abc"
+```
+
+The validator array is the **enforcement**. It runs on the server, where the user
+has no reach. The attributes and the rules are kept in step so an honest submission
+never fails server-side for something the browser could have explained first.
+
+### Where the limits come from
+
+Validator limits are taken from the database columns, not chosen arbitrarily. A
+validator looser than its column produces a Postgres error and a 500 — the exact
+failure the validation exists to prevent.
+
+| Field | Column | Validator | Form attribute |
+| --- | --- | --- | --- |
+| `organization.name` | `varchar(150)` | 3–150 | `maxlength="150"` |
+| `organization.description` | `text` | max 500 | `maxlength="500"` |
+| `organization.contact_email` | `varchar(255)` | `isEmail()` | `type="text"` |
+| `projects.title` | `varchar(150)` | 3–150 | `maxlength="150"` |
+| `projects.description` | `text` | max 500 | `maxlength="500"` |
+| `projects.location` | `varchar(255)` | max 250 | `maxlength="250"` |
+| `projects.event_date` | `date` | `isISO8601()` | `type="date"` |
+| `projects.organization_id` | `integer` | `isInt({ min: 1 })` | `<select required>` |
+| `category.name` | `varchar(100)` | 3–100 | `maxlength="100"` |
+| `category.description` | `text` | max 500 | `maxlength="500"` |
+
+Where a column is `text`, there is no database ceiling and the 500-character cap is
+a product decision. Where a column is `varchar(n)`, the validator sits at or below
+`n`. Both `category` columns are `NOT NULL`, so `.notEmpty()` there prevents a
+constraint violation rather than merely enforcing a preference.
+
+Every rule calls `.trim()` before `.isLength()`, so trailing whitespace cannot push
+a value over its limit.
+
+### The submission cycle
+
+All six write controllers follow the same shape:
+
+```js
+const results = validationResult(req);
+if (!results.isEmpty()) {
+    results.array().forEach((error) => req.flash('error', error.msg));
+    return res.redirect('/edit-project/' + projectId);   // back to THIS record
+}
+```
+
+Three details are deliberate:
+
+- **Redirect, never render.** Responding to a `POST` with a redirect means a browser
+  refresh re-requests the *redirected* page instead of resubmitting the form. This is
+  the Post/Redirect/Get pattern, and it is why a refresh cannot create a duplicate.
+- **Failures return to the same record.** An edit that fails validation redirects to
+  `/edit-project/:id`, not to the create form. Sending the user to `/new-project`
+  would discard the id and lose the record being edited.
+- **Messages travel by flash.** Because the response is a redirect, errors cannot be
+  passed to `res.render()`. `req.flash()` stores them in the session for exactly one
+  subsequent page render.
+
+### Id validation on write routes
+
+Every `:id` write route validates the parameter before doing anything else:
+
+```js
+const projectId = Number(req.params.id);
+
+if (!Number.isInteger(projectId) || projectId < 1) {
+    const err = new Error('Project Not Found');
+    err.status = 404;
+    return next(err);
+}
+```
+
+`Number()` is used rather than `parseInt()` because it is all-or-nothing:
+`Number("5project")` is `NaN`, while `parseInt("5project")` returns `5` and silently
+discards the rest — which would let a malformed URL resolve to a real record.
+
+The check runs before `validationResult()` so an obviously bad id never costs a
+database round-trip. It sits in the controller rather than the model because only the
+controller knows what an appropriate failure looks like; the model relies on
+parameterized queries, which hold regardless of which caller invokes them.
+
+## Assigning categories to projects
+
+A project belongs to many categories and a category contains many projects, so the
+link lives in the `project_category` junction table. `/assign-categories/:projectId`
+edits that relationship as a whole.
+
+### The form
+
+The view receives every category plus the project's current ones, and marks the
+matching boxes:
+
+```ejs
+<% const assignedIds = assignedCategories.map(category => category.category_id); %>
+
+<input type="checkbox" name="categoryIds" value="<%= category.category_id %>"
+  <%= assignedIds.includes(category.category_id) ? 'checked' : '' %> />
+```
+
+Every box shares the name `categoryIds`, which is what makes the browser submit them
+as one group rather than as separate fields.
+
+### Normalising the submission
+
+A checkbox group does not submit a consistent shape, and this is the trap worth
+knowing about:
+
+| Boxes ticked | `req.body.categoryIds` |
+| --- | --- |
+| none | `undefined` |
+| one | `"3"` — a string |
+| two or more | `["3", "6"]` — an array |
+
+Code that assumes an array crashes on zero boxes and silently iterates the
+*characters* of the string on one. The controller collapses all three cases first:
+
+```js
+const submitted = req.body.categoryIds;
+const categoryIds = submitted === undefined
+    ? []
+    : Array.isArray(submitted) ? submitted : [submitted];
+```
+
+An empty array is valid input — it is how a user removes the last category from a
+project.
+
+### Replacing rather than diffing
+
+`updateCategoryAssignments` deletes every existing row for the project, then inserts
+the selected set:
+
+```js
+await db.query('DELETE FROM public.project_category WHERE project_id = $1;', [projectId]);
+
+for (const categoryId of categoryIds) {
+    await assignCategoryToProject(projectId, categoryId);
+}
+```
+
+Working out which rows to add and which to remove would be more code with nothing to
+show for it here: `project_category` holds only `project_id` and `category_id`, so a
+deleted and re-inserted row is identical to the original. There is no timestamp,
+ordering, or foreign key that a delete would destroy. Were such a column added later,
+this should become a diff.
+
+`assignCategoryToProject` uses `ON CONFLICT DO NOTHING`, so a duplicate pair is
+skipped rather than raising a unique-constraint error. It is not exported —
+assignments are always changed as a complete set, never one at a time.
 
 ## Middleware
 
@@ -463,6 +683,24 @@ gitignored and never reaches the server.
   URL. Its organization names are plain text rather than links, because
   `getAllProjects()` does not select `organization_id`.
 - The date format is duplicated across three templates rather than defined once.
+- **No authentication or authorization.** Anyone who can reach the site can create
+  and edit every record. Validating that an id is a positive integer is not the same
+  as checking that the requester may edit *that* record, which is the flaw known as
+  an insecure direct object reference. Closing it needs a login system.
+- **A form that fails validation loses what was typed.** The redirect sends the user
+  back to an empty create form or to an edit form re-populated from the database, so
+  their edits are discarded along with the error. Keeping them would mean storing
+  submitted values in the session alongside the flash messages.
+- **`updateCategoryAssignments` is not transactional.** It deletes every assignment
+  and then re-inserts. If an insert failed partway, the project would be left with
+  fewer categories than it started with. Wrapping both in `BEGIN`/`COMMIT` would make
+  it all-or-nothing.
+- **No concurrency control on edits.** The edit forms submit every field, so two
+  people saving the same record means the later save silently overwrites changes the
+  second person never saw.
+- `logoFilename` on the edit-organization form is accepted without a validation rule.
+  The views escape it with `<%=` and `express.static` blocks path traversal, so it is
+  not exploitable, but it is unchecked input reaching the database.
 
 ## Course
 

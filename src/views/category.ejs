@@ -18,7 +18,8 @@
           <% } else { %>
               <p>No service projects are in this category yet.</p>
           <% } %>
-
+          
+          <p><a href="/edit-category/<%= category.category_id %>">Edit Category</a></p>
           <p><a href="/categories">Back to all categories</a></p>
       </main>
   <%- include('partials/footer') %>

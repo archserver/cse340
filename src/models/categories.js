@@ -114,4 +114,60 @@ const getAllCategories = async() => {
       }
   };
 
-export {getAllCategories, getCategoryDetails, getCategoriesByProjectId, updateCategoryAssignments}
+/**
+     * Insert a new service project category.
+     *
+     * RETURNING hands back the generated id from the row just inserted, so the
+     * controller can redirect to the new category without a second query.
+     *
+     * @param   {string} name         The category name (max 100 chars in the DB).
+     * @param   {string} description  What the category covers.
+     * @returns {Promise<number>} The id of the newly created category.
+     */
+    const createCategory = async (name, description) => {
+        const query = `
+            INSERT INTO public.category (name, description)
+            VALUES ($1, $2)
+            RETURNING category_id;
+        `;
+
+        const result = await db.query(query, [name, description]);
+
+        // INSERT ... RETURNING always yields a row on success, so an empty result
+        // means the insert did not happen and the caller must not continue.
+        if (result.rows.length === 0) {
+            throw new Error('Failed to create category');
+        }
+
+        return result.rows[0].category_id;
+    };
+
+    /**
+     * Update an existing category.
+     *
+     * An empty result means no row matched that id, which is a real error rather
+     * than a silent no-op - the caller asked to change something that is not there.
+     *
+     * @param   {number} categoryId   The category to update.
+     * @param   {string} name         The new category name.
+     * @param   {string} description  The new description.
+     * @returns {Promise<number>} The id of the updated category.
+     */
+    const updateCategory = async (categoryId, name, description) => {
+        const query = `
+            UPDATE public.category
+            SET name = $1, description = $2
+            WHERE category_id = $3
+            RETURNING category_id;
+        `;
+
+        const result = await db.query(query, [name, description, categoryId]);
+
+        if (result.rows.length === 0) {
+            throw new Error('Category not found');
+        }
+
+        return result.rows[0].category_id;
+    };
+
+export {getAllCategories, getCategoryDetails, getCategoriesByProjectId, updateCategoryAssignments, createCategory, updateCategory}
