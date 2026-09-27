@@ -18,10 +18,25 @@
             <li><a href="/organizations">Organizations</a></li>
             <li><a href="/projects">Projects</a></li>
             <li><a href="/categories">Categories</a></li>
+
+            <%# Account links depend on login state. isLoggedIn is set on      %>
+            <%# res.locals by middleware in server.js, so no route has to pass  %>
+            <%# it. The typeof guard keeps the error pages renderable: a        %>
+            <%# request that fails before that middleware runs would have no    %>
+            <%# isLoggedIn variable, and an unguarded reference would throw     %>
+            <%# while rendering the very page meant to report the problem.      %>
+            <% if (typeof isLoggedIn !== 'undefined' && isLoggedIn) { %>
+                <li><a href="/logout">Logout</a></li>
+            <% } else { %>
+                <li><a href="/login">Login</a></li>
+                <li><a href="/register">Register</a></li>
+            <% } %>
         </ul>
     </nav>
 
-    <% const messages = flash(); %>
+    <%# Same guard as above: flash is attached by middleware, so a failure     %>
+    <%# before it runs would otherwise break the error page that reports it.   %>
+    <% const messages = typeof flash === 'function' ? flash() : {}; %>
     <% Object.keys(messages).forEach(type => { %>
         <% if (messages[type].length > 0) { %>
             

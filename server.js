@@ -74,8 +74,19 @@ app.use((req, res, next) => {
     next(); // Pass control to the next middleware or route
 });
 
-// Middleware to make NodeEnv avaliable to all templates
+// Middleware to make NodeEnv and login state avaliable to all templates
 app.use((req, res, next) => {
+    // Whether anyone is signed in. The header partial reads this to decide
+    // between showing Logout or the Login and Register links. Checking
+    // req.session first means the expression is safe even if the session
+    // middleware has not populated it.
+    res.locals.isLoggedIn = false;
+    if (req.session && req.session.user) {
+        res.locals.isLoggedIn = true;
+    }
+    
+    res.locals.user = req.session.user || null;
+
     res.locals.nodeEnv = nodeEnv;
     next();
 });
