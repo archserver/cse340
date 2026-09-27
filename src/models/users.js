@@ -149,4 +149,33 @@ const authenticateUser = async (email, password) => {
 
 // Only createUser and authenticateUser are used outside this file.
 // findUserByEmail and verifyPassword stay private to the module.
-export { createUser, authenticateUser };
+/**
+ * Fetch every registered user with their role name, for the admin users page.
+ *
+ * password_hash is deliberately NOT selected. findUserByEmail includes it
+ * because authentication needs something to compare against; nothing on a
+ * listing page does, so it never leaves the database. Selecting it "just in
+ * case" would put every hash into the site's HTML pipeline for no reason.
+ *
+ * LEFT JOIN rather than JOIN because users.role_id is nullable - a user with
+ * no role assigned still belongs in the list, with role_name as null.
+ *
+ * @returns {Promise<Array<Object>>} One object per user, with the keys
+ *                                   user_id, name, email and role_name,
+ *                                   ordered by name.
+ */
+const getAllUsers = async () => {
+    const query = `
+        SELECT u.user_id, u.name, u.email, r.role_name
+        FROM users AS u
+        LEFT JOIN roles AS r
+          ON r.role_id = u.role_id
+        ORDER BY u.name;
+    `;
+
+    const result = await db.query(query);
+
+    return result.rows;
+};
+
+export { createUser, authenticateUser, getAllUsers };

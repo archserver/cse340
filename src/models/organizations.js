@@ -56,7 +56,7 @@ const getOrganizationDetails = async (organizationId) => {
  * @param {string} description - A description of the organization.
  * @param {string} contactEmail - The contact email for the organization.
  * @param {string} logoFilename - The filename of the organization's logo.
- * @returns {string} The id of the newly created organization record.
+ * @returns {Promise<number>} The id of the newly created organization record.
  */
 const createOrganization = async (name, description, contactEmail, logoFilename) => {
     const query = `

@@ -1,3 +1,5 @@
+<%# Signed-in user's dashboard. Receives `title`, `name` and `email` from the   %>
+<%# /dashboard route, which is guarded by requireLogin.                         %>
 <%- include('partials/header') %>
 
 <main>
@@ -6,6 +8,14 @@
     <h2>Dashboard</h2>
     <p>Name: <%= name %></p>
     <p>Username: <%= email %></p>
+
+    <%# Admin-only link. `user` comes from res.locals in server.js, so this     %>
+    <%# view does not need it passed in. Hiding the link is presentation only - %>
+    <%# the /users route is protected by requireRole('admin') regardless, since %>
+    <%# a hidden link is not access control.                                    %>
+    <% if (user && user.role_name === 'admin') { %>
+        <p><a href="/users">View all registered users</a></p>
+    <% } %>
 
 </main>
 

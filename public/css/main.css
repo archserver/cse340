@@ -286,6 +286,75 @@ the .tags li rules below undo those.
 }
 
 /* --------------------------------------------------------------------------
+   7b. DATA TABLES
+   Used by the admin users page. Browser default tables have no padding, so
+   columns run together - these rules give each cell room and a rule line to
+   read along.
+   -------------------------------------------------------------------------- */
+table {
+    width: 100%;
+    margin-top: var(--space-lg);
+
+    /* collapse merges adjoining cell borders into single lines instead of
+       doubling them up, which is what makes the row rules look like rules
+       rather than boxes */
+    border-collapse: collapse;
+
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+
+    /* border-radius has no effect on a collapsed table without this, because
+       the cell backgrounds paint over the rounded corners */
+    overflow: hidden;
+}
+
+thead {
+    background-color: var(--color-brand-dark);
+}
+
+th {
+    padding: var(--space-sm) var(--space-md);
+    text-align: left;
+    color: #ffffff;           /* 14:1 contrast on the dark header */
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+td {
+    padding: var(--space-sm) var(--space-md);
+    border-top: 1px solid var(--color-border);
+    vertical-align: top;
+}
+
+/* Zebra striping helps the eye track across a wide row */
+tbody tr:nth-child(even) {
+    background-color: var(--color-page);
+}
+
+tbody tr:hover {
+    background-color: #eef3f8;
+}
+
+/* Email addresses are the longest column and have no spaces to wrap on.
+   anywhere lets them break mid-string rather than forcing the table wider
+   than the page. */
+td:nth-child(2) {
+    overflow-wrap: anywhere;
+}
+
+/* The role column is short and fixed - keep it from stealing width */
+td:nth-child(3),
+th:nth-child(3) {
+    width: 1%;
+    white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
    8. IMAGES
    -------------------------------------------------------------------------- */
 .main-logo {
@@ -359,6 +428,27 @@ button:focus-visible {
     main li img {
         float: none;                     /* logo stacks above the text */
         margin: 0 0 var(--space-sm) 0;
+    }
+
+    /* Tighten the users table so three columns fit a phone without the page
+       scrolling sideways. */
+    th,
+    td {
+        padding: var(--space-xs) var(--space-sm);
+    }
+
+    th {
+        font-size: 0.8rem;
+        letter-spacing: 0.02em;
+    }
+
+    /* Release the fixed role column at this width - with so little space the
+       three columns should share it proportionally rather than squeezing the
+       name and email to keep role on one line. */
+    td:nth-child(3),
+    th:nth-child(3) {
+        width: auto;
+        white-space: normal;
     }
 }
 

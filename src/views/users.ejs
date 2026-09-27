@@ -1,0 +1,32 @@
+<%# Admin-only list of registered users. Receives `title` and `users` from the  %>
+<%# /users route, which is guarded by requireLogin and requireRole('admin').    %>
+<%- include('partials/header') %>
+<main>
+    <h1><%= title %></h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email (Username)</th>
+                <th>Role</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% users.forEach(user => { %>
+                <tr>
+                    <td><%= user.name %></td>
+                    <td><%= user.email %></td>
+                    <%# role_name is null when a user has no role assigned,     %>
+                    <%# which the LEFT JOIN in the model allows. Printing null  %>
+                    <%# directly would render the word "null" in the table.     %>
+                    <td><%= user.role_name || 'none' %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+
+    <p><a href="/dashboard">Back to dashboard</a></p>
+
+</main>
+<%- include('partials/footer') %>

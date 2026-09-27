@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { body, validationResult } from 'express-validator';
-import { createUser, authenticateUser } from '../models/users.js';
+import { createUser, authenticateUser, getAllUsers } from '../models/users.js';
 
 /**
  * Server-side validation rules for the registration form.
@@ -253,19 +253,43 @@ const requireRole = (role) => {
         }
 
         req.flash('error', 'You do not have permission to access that page.');
-        res.redirect('/');
+
+        // A signed-in user lacking the role goes to their dashboard - sending
+        // them to log in again would be futile, since re-authenticating grants
+        // the same role. Anyone not signed in goes to the home page.
+        const destination = req.session && req.session.user ? '/dashboard' : '/';
+        res.redirect(destination);
     };
 };
 
+/**
+ * Display the signed-in user's dashboard.
+ *
+ * Reached only behind requireLogin, so req.session.user is guaranteed to exist
+ * by the time this runs.
+ */
 const showDashboard = (req, res, next) => {
     const user = req.session.user;
-    res.render('dashboard', { 
+    res.render('dashboard', {
         title: 'Dashboard',
         name: user.name,
         email: user.email
     });
 }
 
+/**
+ * Display every registered user with their role.
+ *
+ * Admin-only, enforced on the route by requireRole('admin') rather than here.
+ * Keeping the check in middleware means the guard is visible at the route
+ * definition and cannot be forgotten by a future controller that renders the
+ * same view.
+ */
+const showUsersPage = async (req, res) => {
+    const users = await getAllUsers();
+    const title = 'Registered Users';
 
+    res.render('users', { title, users });
+};
 
-export { showUserRegistrationForm, processUserRegistrationForm, showLoginForm, processLoginForm, processLogout, requireLogin, requireRole, showDashboard, userValidation, loginValidation };
+export { showUserRegistrationForm, processUserRegistrationForm, showLoginForm, processLoginForm, processLogout, requireLogin, requireRole, showDashboard, showUsersPage, userValidation, loginValidation };

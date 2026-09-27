@@ -7,7 +7,7 @@ import { showOrganizationsPage, showOrganizationDetailsPage, showNewOrganization
 import { showAllProjectsPage, showProjectsPage, showProjectDetailsPage, showNewProjectForm, processNewProjectForm, showEditProjectForm, processEditProjectForm, projectValidation } from './controllers/projects.js';
 import { showCategoriesPage, showCategoryDetailsPage, showAssignCategoriesForm, processAssignCategoriesForm, showNewCategoryForm, processNewCategoryForm, showEditCategoryForm, processEditCategoryForm, categoryValidation } from './controllers/categories.js';
 import { testErrorPage } from './controllers/errors.js';
-import { showUserRegistrationForm, processUserRegistrationForm, userValidation, showLoginForm, processLoginForm, loginValidation, processLogout, requireLogin, showDashboard, requireRole } from './controllers/users.js';
+import { showUserRegistrationForm, processUserRegistrationForm, userValidation, showLoginForm, processLoginForm, loginValidation, processLogout, requireLogin, showDashboard, requireRole, showUsersPage } from './controllers/users.js';
 
 const router = express.Router();
 
@@ -91,6 +91,9 @@ router.post('/login', loginValidation, processLoginForm);
 router.get('/logout', processLogout);
 // Route for User Dashboard
 router.get('/dashboard', requireLogin, showDashboard);
+// Route for the admin-only users list. requireLogin runs first so a signed-out
+// visitor is sent to log in rather than told they lack permission.
+router.get('/users', requireLogin, requireRole('admin'), showUsersPage);
 
 // error-handling routes
 router.get('/test-error', testErrorPage);
